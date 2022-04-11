@@ -12,7 +12,7 @@ function templateList(fileList) {
     return list
 }
 
-function templateHTML(title, list, body) {
+function templateHTML(title, list, body, control) {
     return `
             <!doctype html>
             <html lang="ko">
@@ -23,7 +23,7 @@ function templateHTML(title, list, body) {
             <body>
                 <h1><a href="/">WEB</a></h1>
                 ${list}
-                <a href="/create">create</a>
+                ${control}
                 <h2>${title}</h2>
                 <p>${body}</p>
             </body>
@@ -41,7 +41,8 @@ const app = http.createServer(function (request, response) {
             const description = 'Hello, Node.js'
             fs.readdir('data/', function (err, data) {
                 const list = templateList(data);
-                const template = templateHTML(title, list, description);
+                // 메인 화면에서는 create(새 게시글 작성)만 가능하게
+                const template = templateHTML(title, list, description, '<a href="/create">create</a>');
                 response.writeHead(200)
                 response.end(template)
             });
@@ -51,7 +52,8 @@ const app = http.createServer(function (request, response) {
                 fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
                     const title = queryData.id
                     const list = templateList(data);
-                    const template = templateHTML(title, list, description)
+                    // 특정 게시글을 읽고 있을 땐 create(새 게시글 생성)와 update(게시글 수정)을 보이게
+                    const template = templateHTML(title, list, description, `<a href="/create">create</a>&nbsp;<a href="/update?id=${title}">update</a>`);
                     response.writeHead(200)
                     response.end(template)
                 })
@@ -61,13 +63,14 @@ const app = http.createServer(function (request, response) {
         fs.readdir('data/', function (err, data) {
             const title = 'Web - create';
             const list = templateList(data);
+            // 글 생성 중에는 create, update가 안 나오게
             const template = templateHTML(title, list, `
                 <form action="/create_process" method="post">
                     <p><input type="text" name="title" placeholder="title"/></p>
                     <p><textarea name="description" placeholder="description"></textarea></p>
                     <p><input type="submit"/></p>
                 </form> 
-            `);
+            `, '');
             response.writeHead(200)
             response.end(template)
         });
