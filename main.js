@@ -108,6 +108,23 @@ const app = http.createServer(function (request, response) {
                 response.end(template)
             });
         });
+    } else if (pathname === '/update_process') {
+        let body = '';
+        request.on('data', function (data) {
+            body += body + data;
+        });
+        request.on('end', function () {
+            const post = qs.parse(body);
+            const id = post.id;         // 바꾸기 전의 파일 이름 (게시글 제목)
+            const title = post.title;   // 바꾼 이후의 파일 이름 (바뀐 이후의 게시글 제목)
+            const description = post.description
+            fs.rename(`data/${id}`, `data/${title}`, function (err) {
+                fs.writeFile(`data/${title}`, description, 'utf-8', function (err) {
+                    response.writeHead(302, {location : `/?id=${title}`})
+                    response.end()
+                });
+            });
+        });
     } else {
         response.writeHead(404)
         response.end('Not found')
