@@ -3,17 +3,17 @@ const fs = require('fs');
 const url = require('url');
 const qs = require('querystring');
 
-function templateList(fileList) {
-    let list = '<ul>';
-    for (let i = 0; i < fileList.length; i++) {
-        list += `<li><a href="/?id=${fileList[i]}">${fileList[i]}</a></li>`;
-    }
-    list += '</ul>';
-    return list
-}
-
-function templateHTML(title, list, body, control) {
-    return `
+const template = {
+    List : function (fileList) {
+        let list = '<ul>';
+        for (let i = 0; i < fileList.length; i++) {
+            list += `<li><a href="/?id=${fileList[i]}">${fileList[i]}</a></li>`;
+        }
+        list += '</ul>';
+        return list
+    },
+    HTML : function (title, list, body, control) {
+        return `
             <!doctype html>
             <html lang="ko">
             <head>
@@ -29,6 +29,7 @@ function templateHTML(title, list, body, control) {
             </body>
             </html>
            `
+    }
 }
 
 const app = http.createServer(function (request, response) {
@@ -40,36 +41,36 @@ const app = http.createServer(function (request, response) {
             const title = 'Welcome'
             const description = 'Hello, Node.js'
             fs.readdir('data/', function (err, data) {
-                const list = templateList(data);
+                const list = template.List(data);
                 // 메인 화면에서는 create(새 게시글 작성)만 가능하게
-                const template = templateHTML(title, list, description, '<a href="/create">create</a>');
+                const html = template.HTML(title, list, description, '<a href="/create">create</a>');
                 response.writeHead(200)
-                response.end(template)
+                response.end(html)
             });
         } else {
             fs.readdir('data/', function (err, data) {
-                const list = templateList(data);
+                const list = template.List(data);
                 fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
                     const title = queryData.id
-                    const list = templateList(data);
+                    const list = template.List(data);
                     // 특정 게시글을 읽고 있을 땐 create(새 게시글 생성)와 update(게시글 수정)을 보이게
-                    const template = templateHTML(title, list, description,
-                        `<a href="/create">create</a>&nbsp;<a href="/update?id=${title}">update</a> 
-                                <form action="/delete_process" method="post"> 
-                                    <input type="hidden" name="id" value="${title}">
-                                    <input type="submit" value="delete"> 
+                    const html = template.HTML(title, list, description,
+                        `<a href="/create">create</a>&nbsp;<a href="/update?id=${title}">update</a>
+                                <form action="/delete_process" method="post">
+                                    <p><input type="hidden" name="id" value="${title}"></p>
+                                    <p><input type="submit" value="delete"></p>
                                 </form>`);
                     response.writeHead(200)
-                    response.end(template)
+                    response.end(html)
                 })
             });
         }
     } else if (pathname === '/create') {
         fs.readdir('data/', function (err, data) {
             const title = 'Web - create';
-            const list = templateList(data);
+            const list = template.List(data);
             // 글 생성 중에는 create, update가 안 나오게
-            const template = templateHTML(title, list, `
+            const html = template.HTML(title, list, `
                 <form action="/create_process" method="post">
                     <p><input type="text" name="title" placeholder="title"/></p>
                     <p><textarea name="description" placeholder="description"></textarea></p>
@@ -77,7 +78,7 @@ const app = http.createServer(function (request, response) {
                 </form> 
             `, '');
             response.writeHead(200)
-            response.end(template)
+            response.end(html)
         });
     } else if (pathname === '/create_process') {
         // 넘겨받은 데이터를 문자열 형태로 body에 축적
@@ -100,8 +101,8 @@ const app = http.createServer(function (request, response) {
             // description : 파일 안의 내용 (게시글의 내용)
             fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
                 const title = queryData.id;
-                const list = templateList(data);
-                const template = templateHTML(title, list, `
+                const list = template.List(data);
+                const html = template.HTML(title, list, `
                 <form action="/update_process" method="post">
                     <input type="hidden" name="id" value="${title}"/> 
                     <p><input type="text" name="title" placeholder="title" value="${title}"/></p>
@@ -110,7 +111,7 @@ const app = http.createServer(function (request, response) {
                 </form> 
             `   , `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`);
                 response.writeHead(200)
-                response.end(template)
+                response.end(html)
             });
         });
     } else if (pathname === '/update_process') {
